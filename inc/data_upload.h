@@ -1,0 +1,24 @@
+#ifndef DATA_UPLOAD_H
+#define DATA_UPLOAD_H
+
+#include <stdint.h>
+
+/* ---- upload method interface ---- */
+typedef struct upload_method upload_method_t;
+
+struct upload_method {
+    int (*init)(upload_method_t *m);
+    int (*upload_data)(void *data);
+    int (*deinit)(upload_method_t *m);
+
+    upload_method_t *next;
+};
+
+/* ---- API ---- */
+void register_upload_methods(void);
+void add_upload_method(upload_method_t *m);
+void remove_upload_method(upload_method_t *m);
+
+int upload_data(void *ptr);
+
+#endif /* DATA_UPLOAD_H */
