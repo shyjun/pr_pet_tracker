@@ -27,6 +27,8 @@ struct sensor {
     uint8_t sleeping;
 
     void *data;
+    void *last_read_data;
+    int last_read_status;
 
     sensor_t *next;
 };

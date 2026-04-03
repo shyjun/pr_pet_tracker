@@ -33,7 +33,15 @@ void daq_thread(void *arg)
                 }
 
                 /* read */
-                if (s->read) s->read(s);
+                int read_success = 0;
+                if (s->read) read_success = s->read(s);
+                s->last_read_status = read_success;
+
+                if (read_success)
+                {
+                    if (s->append_sensor_data)
+                        s->append_sensor_data(s->last_read_data);
+                }
 
                 if (s->update_timeout)
                     s->update_timeout(s, now);

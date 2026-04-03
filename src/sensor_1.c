@@ -2,6 +2,7 @@
 
 /* ---- static instance ---- */
 static sensor_t sensor1;
+static int s1_last_read_data;
 
 /* ---- implementations ---- */
 static void s1_init(sensor_t *s)
@@ -44,6 +45,7 @@ void add_sensor_1(void)
     sensor1.sleeping    = 0;
 
     sensor1.data = NULL;
+    sensor1.last_read_data = &s1_last_read_data;
     sensor1.next = NULL;
 
     /* call init BEFORE adding */
