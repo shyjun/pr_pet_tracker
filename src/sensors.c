@@ -18,7 +18,9 @@ static int default_is_timeout(sensor_t *s, uint32_t now)
 
 static void default_update_timeout(sensor_t *s, uint32_t now)
 {
-    s->next_due_time += s->period_ms;
+    uint32_t p = s->period_ms;
+    uint32_t aligned = ((now + p - 1) / p) * p;
+    s->next_due_time = aligned;
 }
 
 /* ---- Time helper ---- */

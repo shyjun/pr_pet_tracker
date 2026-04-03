@@ -35,19 +35,10 @@ void daq_thread(void *arg)
                 /* read */
                 if (s->read) s->read(s);
 
+                if (s->update_timeout)
+                    s->update_timeout(s, now);
+
                 /* append hook (user can implement) */
-                if (s->append_sensor_data)
-                    s->append_sensor_data(s->data);
-
-                /* go back to sleep */
-                if (s->sleep)
-                {
-                    s->sleep(s);
-                    s->sleeping = 1;
-                }
-
-                /* schedule next */
-                s->next_due_time += s->period_ms;
             }
 
             if (s->next_due_time < next_wakeup)
