@@ -49,6 +49,8 @@ void daq_thread(void *arg)
                 /* append hook (user can implement) */
             }
 
+            push_data(json_string_ptr);
+            
             if (s->next_due_time < next_wakeup)
                 next_wakeup = s->next_due_time;
         }
