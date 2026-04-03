@@ -2,7 +2,9 @@
 #include "sensors.h"
 
 /* externs from each sensor file */
+#if (SENSOR_1_ENABLED==1)
 extern void add_sensor_1(void);
+#endif
 extern void add_sensor_2(void);
 
 
@@ -63,7 +65,9 @@ void daq_thread(void *arg)
 void daq_init(void)
 {
     /* register all sensors */
+#if (SENSOR_1_ENABLED==1)
     add_sensor_1();
+#endif
     add_sensor_2();
 
     uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;

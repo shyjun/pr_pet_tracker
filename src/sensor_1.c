@@ -1,5 +1,7 @@
 #include "sensors.h"
 
+#if (SENSOR_1_ENABLED==1)
+
 /* ---- static instance ---- */
 static sensor_t sensor1;
 static int s1_last_read_data;
@@ -54,3 +56,5 @@ void add_sensor_1(void)
 
     add_sensor(&sensor1);
 }
+
+#endif
