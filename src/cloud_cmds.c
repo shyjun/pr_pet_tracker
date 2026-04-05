@@ -26,7 +26,7 @@ static void handle_command(pr_msg_t *msg)
             break;
 
         default:
-            printf("Unknown CMD: %u\n", msg->msgid & ~MSG_TYPE_MASK);
+            assert(0 && "Unknown CMD");
             break;
     }
 }

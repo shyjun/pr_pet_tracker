@@ -27,6 +27,8 @@ struct sensor {
 
     uint8_t powered_off;
     uint8_t sleeping;
+    uint8_t put_to_sleep_after_read;
+    uint8_t poweroff_after_read;
 
     void *data;
     void *last_read_data;

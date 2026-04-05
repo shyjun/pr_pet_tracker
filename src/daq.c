@@ -50,6 +50,18 @@ void daq_thread(void *arg)
                         s->append_sensor_data(s->last_read_data);
                 }
 
+                if (s->put_to_sleep_after_read)
+                {
+                    if (s->sleep) s->sleep(s);
+                    s->sleeping = 1;
+                }
+
+                if (s->poweroff_after_read)
+                {
+                    if (s->power_off) s->power_off(s);
+                    s->powered_off = 1;
+                }
+
                 if (s->update_timeout)
                     s->update_timeout(s, now);
             }

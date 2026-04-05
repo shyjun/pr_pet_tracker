@@ -45,6 +45,8 @@ void add_sensor_1(void)
 
     sensor1.powered_off = 1;
     sensor1.sleeping    = 0;
+    sensor1.put_to_sleep_after_read = 0;
+    sensor1.poweroff_after_read = 0;
 
     sensor1.data = NULL;
     sensor1.last_read_data = &s1_last_read_data;
