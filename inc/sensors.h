@@ -36,6 +36,7 @@ struct sensor {
 /* core API */
 void daq_init(void);
 void daq_thread(void *arg);
+int daq_post(uint8_t msg);
 
 void add_sensor(sensor_t *s);
 void remove_sensor(sensor_t *s);

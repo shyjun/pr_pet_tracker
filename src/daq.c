@@ -1,5 +1,8 @@
 
 #include "sensors.h"
+#include "queue.h"
+
+static QueueHandle_t g_daq_msgq;
 
 /* externs from each sensor file */
 #if (SENSOR_1_ENABLED==1)
@@ -10,6 +13,7 @@ extern void add_sensor_2(void);
 
 void daq_thread(void *arg)
 {
+    uint8_t dummy;
     (void)arg;
 
     while (1)
@@ -58,12 +62,19 @@ void daq_thread(void *arg)
         }
 
         uint32_t delay_ms = (next_wakeup > now) ? (next_wakeup - now) : 1;
-        vTaskDelay(pdMS_TO_TICKS(delay_ms));
+        xQueueReceive(g_daq_msgq, &dummy, pdMS_TO_TICKS(delay_ms));
     }
+}
+
+int daq_post(uint8_t msg)
+{
+    return xQueueSend(g_daq_msgq, &msg, 0) == pdPASS ? 0 : -1;
 }
 
 void daq_init(void)
 {
+    g_daq_msgq = xQueueCreate(1, sizeof(uint8_t));
+
     /* register all sensors */
 #if (SENSOR_1_ENABLED==1)
     add_sensor_1();
