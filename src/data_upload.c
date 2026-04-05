@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "data_upload.h"
@@ -73,13 +74,8 @@ int upload_data(void *ptr)
 /* ---- push data ---- */
 void push_data(pr_msg_t *msg)
 {
-    if (!msg) return;
-
-    if (xQueueSend(g_upload_queue, &msg, 0) != pdPASS)
-    {
-        printf("upload queue full\n");
-        free_pr_msg(msg);
-    }
+    assert(msg != NULL);
+    assert(xQueueSend(g_upload_queue, &msg, 0) == pdPASS);
 }
 
 /* ---- upload thread ---- */
@@ -92,6 +88,7 @@ void data_upload_thread(void *arg)
     {
         if (xQueueReceive(g_upload_queue, &msg, portMAX_DELAY) == pdTRUE)
         {
+            assert(msg_is_type(msg, MSG_TYPE_UPLOAD));
             upload_data(msg->data);
             free_pr_msg(msg);
         }

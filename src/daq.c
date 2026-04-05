@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include "sensors.h"
 #include "queue.h"
 #include "data_upload.h"
@@ -15,7 +16,7 @@ extern void add_sensor_2(void);
 
 void daq_thread(void *arg)
 {
-    uint8_t dummy;
+    pr_msg_t *msg;
     (void)arg;
 
     while (1)
@@ -58,20 +59,19 @@ void daq_thread(void *arg)
         }
 
         uint32_t delay_ms = (next_wakeup > now) ? (next_wakeup - now) : 1;
-        xQueueReceive(g_daq_msgq, &dummy, pdMS_TO_TICKS(delay_ms));
+        if (xQueueReceive(g_daq_msgq, &msg, pdMS_TO_TICKS(delay_ms)) == pdTRUE)
+        {
+            assert(msg_is_type(msg, MSG_TYPE_DAQ));
+            /* handle DAQ message */
+            free_pr_msg(msg);
+        }
     }
 }
 
 int daq_post(pr_msg_t *msg)
 {
-    if (!msg) return -1;
-
-    if (xQueueSend(g_daq_msgq, &msg, 0) != pdPASS)
-    {
-        free_pr_msg(msg);
-        return -1;
-    }
-
+    assert(msg != NULL);
+    assert(xQueueSend(g_daq_msgq, &msg, 0) == pdPASS);
     return 0;
 }
 

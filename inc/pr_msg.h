@@ -5,6 +5,17 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/* ---- message type ownership (MSB bits) ---- */
+typedef enum {
+    MSG_TYPE_DAQ    = 1u << 31,
+    MSG_TYPE_CLOUD  = 1u << 30,
+    MSG_TYPE_UPLOAD = 1u << 29,
+} msg_type_t;
+
+#define MSG_TYPE_MASK (MSG_TYPE_DAQ | MSG_TYPE_CLOUD | MSG_TYPE_UPLOAD)
+
+#define msg_is_type(msg, type) (((msg)->msgid & MSG_TYPE_MASK) == (type))
+
 typedef struct {
     uint32_t msgid;
     void    *data;

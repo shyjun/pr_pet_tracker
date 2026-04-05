@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 #include "cloud_cmds.h"
 
 #define CLOUD_CMDS_QUEUE_LEN   10
@@ -14,7 +15,7 @@ static void handle_command(pr_msg_t *msg)
     if (!msg)
         return;
 
-    switch (msg->msgid)
+    switch (msg->msgid & ~MSG_TYPE_MASK)
     {
         case 1:
             printf("CMD 1 received\n");
@@ -25,7 +26,7 @@ static void handle_command(pr_msg_t *msg)
             break;
 
         default:
-            printf("Unknown CMD: %u\n", msg->msgid);
+            printf("Unknown CMD: %u\n", msg->msgid & ~MSG_TYPE_MASK);
             break;
     }
 }
@@ -41,6 +42,7 @@ void cloud_cmds_thread(void *arg)
     {
         if (xQueueReceive(g_cmd_queue, &msg, portMAX_DELAY) == pdTRUE)
         {
+            assert(msg_is_type(msg, MSG_TYPE_CLOUD));
             handle_command(msg);
             free_pr_msg(msg);
         }
@@ -50,12 +52,8 @@ void cloud_cmds_thread(void *arg)
 /* ---- send command ---- */
 int cloud_cmds_send(pr_msg_t *msg)
 {
-    if (!msg)
-        return -1;
-
-    if (xQueueSend(g_cmd_queue, &msg, 0) != pdPASS)
-        return -1;
-
+    assert(msg != NULL);
+    assert(xQueueSend(g_cmd_queue, &msg, 0) == pdPASS);
     return 0;
 }
 
