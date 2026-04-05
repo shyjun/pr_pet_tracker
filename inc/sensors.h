@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include "pr_msg.h"
 
 typedef struct sensor sensor_t;
 
@@ -36,7 +37,7 @@ struct sensor {
 /* core API */
 void daq_init(void);
 void daq_thread(void *arg);
-int daq_post(uint8_t msg);
+int daq_post(pr_msg_t *msg);
 
 void add_sensor(sensor_t *s);
 void remove_sensor(sensor_t *s);

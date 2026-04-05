@@ -1,16 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "FreeRTOS.h"
+#include "queue.h"
 #include "data_upload.h"
 
 /* ---- upload methods list ---- */
 static upload_method_t *g_methods = NULL;
 
-/* ---- data list ---- */
-static data_node_t *g_data_head = NULL;
-static data_node_t *g_data_tail = NULL;
-
-/* ---- sync ---- */
+/* ---- queue ---- */
 static QueueHandle_t g_upload_queue;
+
+/* ---- extern register ---- */
+extern void register_ble(void);
+extern void register_wifi(void);
+extern void register_cellular(void);
+
+void register_upload_methods(void)
+{
+    register_ble();
+    register_wifi();
+    register_cellular();
+}
 
 /* ---- add/remove upload method ---- */
 void add_upload_method(upload_method_t *m)
@@ -41,18 +51,6 @@ void remove_upload_method(upload_method_t *m)
     }
 }
 
-/* ---- extern register ---- */
-extern void register_ble(void);
-extern void register_wifi(void);
-extern void register_cellular(void);
-
-void register_upload_methods(void)
-{
-    register_ble();
-    register_wifi();
-    register_cellular();
-}
-
 /* ---- upload dispatcher ---- */
 int upload_data(void *ptr)
 {
@@ -73,64 +71,29 @@ int upload_data(void *ptr)
 }
 
 /* ---- push data ---- */
-void push_data(char *data)
+void push_data(pr_msg_t *msg)
 {
-    data_node_t *node = pvPortMalloc(sizeof(data_node_t));
-    if (!node) return;
+    if (!msg) return;
 
-    node->data = data;
-    node->next = NULL;
-
-    if (!g_data_head)
+    if (xQueueSend(g_upload_queue, &msg, 0) != pdPASS)
     {
-        g_data_head = g_data_tail = node;
+        printf("upload queue full\n");
+        free_pr_msg(msg);
     }
-    else
-    {
-        g_data_tail->next = node;
-        g_data_tail = node;
-    }
-
-    /* notify upload thread */
-    uint8_t msg = 1;
-    xQueueSend(g_upload_queue, &msg, 0);
-}
-
-/* ---- pop one ---- */
-static data_node_t* pop_data(void)
-{
-    if (!g_data_head) return NULL;
-
-    data_node_t *node = g_data_head;
-    g_data_head = node->next;
-
-    if (!g_data_head)
-        g_data_tail = NULL;
-
-    return node;
 }
 
 /* ---- upload thread ---- */
 void data_upload_thread(void *arg)
 {
     (void)arg;
-    uint8_t msg;
+    pr_msg_t *msg;
 
     while (1)
     {
-        /* wait for trigger */
-        xQueueReceive(g_upload_queue, &msg, portMAX_DELAY);
-
-        /* process all available data */
-        while (1)
+        if (xQueueReceive(g_upload_queue, &msg, portMAX_DELAY) == pdTRUE)
         {
-            data_node_t *node = pop_data();
-            if (!node)
-                break;
-
-            upload_data(node->data);
-
-            vPortFree(node);
+            upload_data(msg->data);
+            free_pr_msg(msg);
         }
     }
 }
@@ -138,7 +101,7 @@ void data_upload_thread(void *arg)
 /* ---- init ---- */
 void data_upload_init(void)
 {
-    g_upload_queue = xQueueCreate(10, sizeof(uint8_t));
+    g_upload_queue = xQueueCreate(10, sizeof(pr_msg_t *));
 
     register_upload_methods();
 

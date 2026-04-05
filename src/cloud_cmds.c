@@ -9,12 +9,12 @@
 static QueueHandle_t g_cmd_queue;
 
 /* ---- handler ---- */
-static void handle_command(cloud_cmd_t *cmd)
+static void handle_command(pr_msg_t *msg)
 {
-    if (!cmd)
+    if (!msg)
         return;
 
-    switch (cmd->cmd_id)
+    switch (msg->msgid)
     {
         case 1:
             printf("CMD 1 received\n");
@@ -25,7 +25,7 @@ static void handle_command(cloud_cmd_t *cmd)
             break;
 
         default:
-            printf("Unknown CMD: %d\n", cmd->cmd_id);
+            printf("Unknown CMD: %u\n", msg->msgid);
             break;
     }
 }
@@ -35,25 +35,25 @@ void cloud_cmds_thread(void *arg)
 {
     (void)arg;
 
-    cloud_cmd_t cmd;
+    pr_msg_t *msg;
 
     while (1)
     {
-        /* wait forever for command */
-        if (xQueueReceive(g_cmd_queue, &cmd, portMAX_DELAY) == pdTRUE)
+        if (xQueueReceive(g_cmd_queue, &msg, portMAX_DELAY) == pdTRUE)
         {
-            handle_command(&cmd);
+            handle_command(msg);
+            free_pr_msg(msg);
         }
     }
 }
 
 /* ---- send command ---- */
-int cloud_cmds_send(cloud_cmd_t *cmd)
+int cloud_cmds_send(pr_msg_t *msg)
 {
-    if (!cmd)
+    if (!msg)
         return -1;
 
-    if (xQueueSend(g_cmd_queue, cmd, 0) != pdPASS)
+    if (xQueueSend(g_cmd_queue, &msg, 0) != pdPASS)
         return -1;
 
     return 0;
@@ -62,7 +62,7 @@ int cloud_cmds_send(cloud_cmd_t *cmd)
 /* ---- init ---- */
 void cloud_cmds_init(void)
 {
-    g_cmd_queue = xQueueCreate(CLOUD_CMDS_QUEUE_LEN, sizeof(cloud_cmd_t));
+    g_cmd_queue = xQueueCreate(CLOUD_CMDS_QUEUE_LEN, sizeof(pr_msg_t *));
 
     xTaskCreate(cloud_cmds_thread,
                 "cloud_cmds",

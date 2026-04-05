@@ -1,6 +1,8 @@
 
 #include "sensors.h"
 #include "queue.h"
+#include "data_upload.h"
+#include "pr_msg.h"
 
 static QueueHandle_t g_daq_msgq;
 
@@ -25,7 +27,6 @@ void daq_thread(void *arg)
         {
             if (s->is_timeout(s, now))
             {
-                /* power handling */
                 if (s->powered_off)
                 {
                     if (s->power_on) s->power_on(s);
@@ -38,7 +39,6 @@ void daq_thread(void *arg)
                     s->sleeping = 0;
                 }
 
-                /* read */
                 int read_success = 0;
                 if (s->read) read_success = s->read(s);
                 s->last_read_status = read_success;
@@ -51,12 +51,8 @@ void daq_thread(void *arg)
 
                 if (s->update_timeout)
                     s->update_timeout(s, now);
-
-                /* append hook (user can implement) */
             }
 
-            push_data(json_string_ptr);
-            
             if (s->next_due_time < next_wakeup)
                 next_wakeup = s->next_due_time;
         }
@@ -66,16 +62,23 @@ void daq_thread(void *arg)
     }
 }
 
-int daq_post(uint8_t msg)
+int daq_post(pr_msg_t *msg)
 {
-    return xQueueSend(g_daq_msgq, &msg, 0) == pdPASS ? 0 : -1;
+    if (!msg) return -1;
+
+    if (xQueueSend(g_daq_msgq, &msg, 0) != pdPASS)
+    {
+        free_pr_msg(msg);
+        return -1;
+    }
+
+    return 0;
 }
 
 void daq_init(void)
 {
-    g_daq_msgq = xQueueCreate(1, sizeof(uint8_t));
+    g_daq_msgq = xQueueCreate(1, sizeof(pr_msg_t *));
 
-    /* register all sensors */
 #if (SENSOR_1_ENABLED==1)
     add_sensor_1();
 #endif

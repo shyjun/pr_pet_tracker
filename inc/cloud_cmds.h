@@ -4,16 +4,11 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
-
-/* ---- command structure ---- */
-typedef struct {
-    int   cmd_id;
-    void *data;
-} cloud_cmd_t;
+#include "pr_msg.h"
 
 /* ---- API ---- */
 void cloud_cmds_init(void);
-int  cloud_cmds_send(cloud_cmd_t *cmd);
+int  cloud_cmds_send(pr_msg_t *msg);
 
 /* ---- thread ---- */
 void cloud_cmds_thread(void *arg);

@@ -2,6 +2,7 @@
 #define DATA_UPLOAD_H
 
 #include <stdint.h>
+#include "pr_msg.h"
 
 /* ---- upload method interface ---- */
 typedef struct upload_method upload_method_t;
@@ -20,5 +21,10 @@ void add_upload_method(upload_method_t *m);
 void remove_upload_method(upload_method_t *m);
 
 int upload_data(void *ptr);
+void push_data(pr_msg_t *msg);
+void data_upload_init(void);
+
+/* ---- thread ---- */
+void data_upload_thread(void *arg);
 
 #endif /* DATA_UPLOAD_H */
