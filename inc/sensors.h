@@ -9,6 +9,7 @@
 typedef struct sensor sensor_t;
 
 struct sensor {
+    const char *name;
     void (*init)(sensor_t *s);
     int  (*read)(sensor_t *s);
     int  (*is_timeout)(sensor_t *s, uint32_t now);

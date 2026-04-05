@@ -9,7 +9,7 @@ static int s1_last_read_data;
 /* ---- implementations ---- */
 static void s1_init(sensor_t *s)
 {
-    /* hardware init */
+    s->name = "sensor_1";
 }
 
 static int s1_read(sensor_t *s)
