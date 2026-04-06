@@ -21,6 +21,7 @@ void remove_upload_method(upload_method_t *m);
 
 int upload_data(char *json_str);
 void push_data(char *json_str);
+void trigger_data_upload(void);
 void data_upload_init(void);
 
 /* ---- thread ---- */

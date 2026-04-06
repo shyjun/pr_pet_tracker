@@ -13,6 +13,7 @@ static QueueHandle_t g_daq_msgq;
 extern void add_sensor_1(void);
 #endif
 extern void add_sensor_2(void);
+extern const char* get_ID(void);
 
 /* ---- register all sensors ---- */
 static void register_sensors(void)
@@ -28,9 +29,31 @@ void handle_daq_msg(pr_msg_t *msg)
 
 }
 
-void init_daq_json_fields(void *json_obj)
+#if 0  // sample format
 {
+  "uuid": "",
+  "time": "",
+  "sensors": {
+    "hr": {
+      "rate": "",
+      "max": ""
+    },
+    "gps": {
+      "long": "",
+      "lat": "",
+      "height": ""
+    }
+  }
+}
+#endif
 
+void init_daq_json_fields(json_t *json_root)
+{
+    int ret = 0;
+    ret |= json_object_set_new(json_root, "ID", json_string(get_ID()));
+    assert(ret == 0);
+    ret |= json_object_set_new(json_root, "time", json_integer(now_ms()));
+    assert(ret == 0);
 }
 
 void daq_thread(void *arg)
@@ -42,8 +65,8 @@ void daq_thread(void *arg)
     {
         uint32_t now = now_ms();
         uint32_t next_wakeup = UINT32_MAX;
-        void *json_obj = json_object_new_object();
-        init_daq_json_fields(json_obj);
+        json_t *json_root = json_object();
+        init_daq_json_fields(json_root);
 
         for (sensor_t *s = g_sensors_head; s; s = s->next)
         {
@@ -71,7 +94,7 @@ void daq_thread(void *arg)
                 if (read_success)
                 {
                     if (s->append_sensor_data)
-                        s->append_sensor_data(s, json_obj);
+                        s->append_sensor_data(s, json_root);
                 }
 
                 if (s->put_to_sleep_after_read)
@@ -96,8 +119,8 @@ void daq_thread(void *arg)
                 next_wakeup = s->next_due_time;
         }
 
-        char *json_str = json_dumps(json_obj, JSON_COMPACT);
-        json_object_put(json_obj);
+        char *json_str = json_dumps(json_root, JSON_COMPACT);
+        json_decref(json_root);
         push_data(json_str);
 
         uint32_t delay_ms = (next_wakeup > now) ? (next_wakeup - now) : 1;

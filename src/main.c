@@ -6,6 +6,8 @@
 #include "sensors.h"
 #include "data_upload.h"
 
+extern void init_assets(void);
+
 /* ---- platform specific ---- */
 static void init_peripherals(void)
 {
@@ -34,6 +36,9 @@ int main(void)
 {
     /* basic HW init (very early) */
     init_peripherals();
+
+    /* init assets */
+    init_assets();
 
     /* create init task (keeps main clean) */
     BaseType_t ret = xTaskCreate(system_init_task,

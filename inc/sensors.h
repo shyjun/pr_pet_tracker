@@ -44,5 +44,6 @@ int daq_post(pr_msg_t *msg);
 
 void add_sensor(sensor_t *s);
 void remove_sensor(sensor_t *s);
+sensor_t* get_sensor_by_name(const char *name);
 
 #endif

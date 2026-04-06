@@ -25,10 +25,28 @@ static void s1_power_off(sensor_t *s) { /* hw */ }
 static void s1_sleep(sensor_t *s)     { /* hw */ }
 static void s1_wake(sensor_t *s)      { /* hw */ }
 
-static void s1_append(sensor_t *s, void *json_obj)
+static void s1_append(void *s, json_t *json_obj)
+{
+    int ret = 0;
+    json_t *s1_obj;
+
+    s1_obj = json_object();
+    assert(s1_obj != NULL);
+
+    ret |= json_object_set_new(s1_obj, "name", json_string(s->name));
+    assert(ret == 0);
+
+    ret |= json_object_set_new(s1_obj, "val", integer(s->last_read_data));
+    assert(ret == 0);
+
+    ret |= json_object_set_new(json_obj, "s1_data", s1_obj);
+    assert(ret == 0);
+}
+
+
+static void s1_append(sensor_t *s, json_t *json_obj)
 {
     (void)s;
-    (void)json_obj;
 }
 
 /* ---- register function ---- */

@@ -1,6 +1,5 @@
 #include "sensors.h"
-
-#include "sensors.h"
+#include <string.h>
 
 #define DAQ_TASK_STACK   2048
 #define DAQ_TASK_PRIO    2
@@ -63,4 +62,17 @@ void remove_sensor(sensor_t *s)
         prev = curr;
         curr = curr->next;
     }
+}
+
+/* ---- Get sensor by name ---- */
+sensor_t* get_sensor_by_name(const char *name)
+{
+    sensor_t *s = g_sensors_head;
+    while (s)
+    {
+        if (s->name && strcmp(s->name, name) == 0)
+            return s;
+        s = s->next;
+    }
+    return NULL;
 }
