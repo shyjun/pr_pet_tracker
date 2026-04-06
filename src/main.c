@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -35,12 +36,13 @@ int main(void)
     init_peripherals();
 
     /* create init task (keeps main clean) */
-    xTaskCreate(system_init_task,
+    BaseType_t ret = xTaskCreate(system_init_task,
                 "sys_init",
                 2048,
                 NULL,
                 3,
                 NULL);
+    assert(ret == pdPASS);
 
     /* start scheduler */
     vTaskStartScheduler();

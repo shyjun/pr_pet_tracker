@@ -1,5 +1,6 @@
 
 #include <assert.h>
+#include <jansson.h>
 #include "sensors.h"
 #include "queue.h"
 #include "data_upload.h"
@@ -13,6 +14,24 @@ extern void add_sensor_1(void);
 #endif
 extern void add_sensor_2(void);
 
+/* ---- register all sensors ---- */
+static void register_sensors(void)
+{
+#if (SENSOR_1_ENABLED==1)
+    add_sensor_1();
+#endif
+    add_sensor_2();
+}
+
+void handle_daq_msg(pr_msg_t *msg)
+{
+
+}
+
+void init_daq_json_fields(void *json_obj)
+{
+
+}
 
 void daq_thread(void *arg)
 {
@@ -23,42 +42,49 @@ void daq_thread(void *arg)
     {
         uint32_t now = now_ms();
         uint32_t next_wakeup = UINT32_MAX;
+        void *json_obj = json_object_new_object();
+        init_daq_json_fields(json_obj);
 
-        for (sensor_t *s = g_head; s; s = s->next)
+        for (sensor_t *s = g_sensors_head; s; s = s->next)
         {
             if (s->is_timeout(s, now))
             {
                 if (s->powered_off)
                 {
-                    if (s->power_on) s->power_on(s);
+                    if (s->power_on)
+                        s->power_on(s);
                     s->powered_off = 0;
                 }
 
                 if (s->sleeping)
                 {
-                    if (s->wake_up) s->wake_up(s);
+                    if (s->wake_up)
+                        s->wake_up(s);
                     s->sleeping = 0;
                 }
 
                 int read_success = 0;
-                if (s->read) read_success = s->read(s);
+                if (s->read)
+                    read_success = s->read(s);
                 s->last_read_status = read_success;
 
                 if (read_success)
                 {
                     if (s->append_sensor_data)
-                        s->append_sensor_data(s->last_read_data);
+                        s->append_sensor_data(s, json_obj);
                 }
 
                 if (s->put_to_sleep_after_read)
                 {
-                    if (s->sleep) s->sleep(s);
+                    if (s->sleep)
+                        s->sleep(s);
                     s->sleeping = 1;
                 }
 
                 if (s->poweroff_after_read)
                 {
-                    if (s->power_off) s->power_off(s);
+                    if (s->power_off)
+                        s->power_off(s);
                     s->powered_off = 1;
                 }
 
@@ -70,11 +96,16 @@ void daq_thread(void *arg)
                 next_wakeup = s->next_due_time;
         }
 
+        char *json_str = json_dumps(json_obj, JSON_COMPACT);
+        json_object_put(json_obj);
+        push_data(json_str);
+
         uint32_t delay_ms = (next_wakeup > now) ? (next_wakeup - now) : 1;
-        if (xQueueReceive(g_daq_msgq, &msg, pdMS_TO_TICKS(delay_ms)) == pdTRUE)
+        BaseType_t ret = xQueueReceive(g_daq_msgq, &msg, pdMS_TO_TICKS(delay_ms));
+        if (ret == pdTRUE)
         {
             assert(msg_is_type(msg, MSG_TYPE_DAQ));
-            /* handle DAQ message */
+            handle_daq_msg(msg);
             free_pr_msg(msg);
         }
     }
@@ -90,15 +121,13 @@ int daq_post(pr_msg_t *msg)
 void daq_init(void)
 {
     g_daq_msgq = xQueueCreate(1, sizeof(pr_msg_t *));
+    assert(g_daq_msgq != NULL);
 
-#if (SENSOR_1_ENABLED==1)
-    add_sensor_1();
-#endif
-    add_sensor_2();
+    register_sensors();
 
     uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
 
-    for (sensor_t *s = g_head; s; s = s->next)
+    for (sensor_t *s = g_sensors_head; s; s = s->next)
     {
         if (!s->is_timeout)
         {
@@ -115,5 +144,6 @@ void daq_init(void)
         s->next_due_time = aligned;
     }
 
-    xTaskCreate(daq_thread, "daq", 2048, NULL, 2, NULL);
+    BaseType_t ret = xTaskCreate(daq_thread, "daq", 2048, NULL, 2, NULL);
+    assert(ret == pdPASS);
 }

@@ -20,7 +20,7 @@ struct sensor {
     void (*sleep)(sensor_t *s);
     void (*wake_up)(sensor_t *s);
 
-    void (*append_sensor_data)(void *data);
+    void (*append_sensor_data)(sensor_t *s, void *json_obj);
 
     uint32_t period_ms;
     uint32_t next_due_time;

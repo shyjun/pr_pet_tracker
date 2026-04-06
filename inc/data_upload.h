@@ -2,14 +2,13 @@
 #define DATA_UPLOAD_H
 
 #include <stdint.h>
-#include "pr_msg.h"
 
 /* ---- upload method interface ---- */
 typedef struct upload_method upload_method_t;
 
 struct upload_method {
     int (*init)(upload_method_t *m);
-    int (*upload_data)(void *data);
+    int (*upload_data)(char *json_str);
     int (*deinit)(upload_method_t *m);
 
     upload_method_t *next;
@@ -20,8 +19,8 @@ void register_upload_methods(void);
 void add_upload_method(upload_method_t *m);
 void remove_upload_method(upload_method_t *m);
 
-int upload_data(void *ptr);
-void push_data(pr_msg_t *msg);
+int upload_data(char *json_str);
+void push_data(char *json_str);
 void data_upload_init(void);
 
 /* ---- thread ---- */

@@ -40,12 +40,11 @@ void cloud_cmds_thread(void *arg)
 
     while (1)
     {
-        if (xQueueReceive(g_cmd_queue, &msg, portMAX_DELAY) == pdTRUE)
-        {
-            assert(msg_is_type(msg, MSG_TYPE_CLOUD));
-            handle_command(msg);
-            free_pr_msg(msg);
-        }
+        BaseType_t ret = xQueueReceive(g_cmd_queue, &msg, portMAX_DELAY);
+        assert(ret == pdTRUE);
+        assert(msg_is_type(msg, MSG_TYPE_CLOUD));
+        handle_command(msg);
+        free_pr_msg(msg);
     }
 }
 
@@ -61,11 +60,13 @@ int cloud_cmds_send(pr_msg_t *msg)
 void cloud_cmds_init(void)
 {
     g_cmd_queue = xQueueCreate(CLOUD_CMDS_QUEUE_LEN, sizeof(pr_msg_t *));
+    assert(g_cmd_queue != NULL);
 
-    xTaskCreate(cloud_cmds_thread,
+    BaseType_t ret = xTaskCreate(cloud_cmds_thread,
                 "cloud_cmds",
                 CLOUD_CMDS_TASK_STACK,
                 NULL,
                 CLOUD_CMDS_TASK_PRIO,
                 NULL);
+    assert(ret == pdPASS);
 }

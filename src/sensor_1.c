@@ -2,6 +2,8 @@
 
 #if (SENSOR_1_ENABLED==1)
 
+#define SENSOR_1_NAME "sensor_1"
+
 /* ---- static instance ---- */
 static sensor_t sensor1;
 static int s1_last_read_data;
@@ -9,7 +11,7 @@ static int s1_last_read_data;
 /* ---- implementations ---- */
 static void s1_init(sensor_t *s)
 {
-    s->name = "sensor_1";
+    s->name = SENSOR_1_NAME;
 }
 
 static int s1_read(sensor_t *s)
@@ -23,9 +25,10 @@ static void s1_power_off(sensor_t *s) { /* hw */ }
 static void s1_sleep(sensor_t *s)     { /* hw */ }
 static void s1_wake(sensor_t *s)      { /* hw */ }
 
-static void s1_append(void *data)
+static void s1_append(sensor_t *s, void *json_obj)
 {
-    /* user logic (optional) */
+    (void)s;
+    (void)json_obj;
 }
 
 /* ---- register function ---- */
