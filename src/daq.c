@@ -59,14 +59,16 @@ void init_daq_json_fields(json_t *json_root)
 void daq_thread(void *arg)
 {
     pr_msg_t *msg;
+    uint32_t now;
+    uint32_t next_wakeup;
+    json_t *json_root;
     (void)arg;
 
     while (1)
     {
-        uint32_t now = now_ms();
-        uint32_t next_wakeup = UINT32_MAX;
-        json_t *json_root = json_object();
-        init_daq_json_fields(json_root);
+        now = now_ms();
+        json_root = NULL;
+        next_wakeup = UINT32_MAX;
 
         for (sensor_t *s = g_sensors_head; s; s = s->next)
         {
@@ -93,6 +95,13 @@ void daq_thread(void *arg)
 
                 if (read_success)
                 {
+                    if (NULL == json_root)
+                    {
+                        /* create json object */
+                        json_root = json_object();
+                        init_daq_json_fields(json_root);
+                    }
+
                     if (s->append_sensor_data)
                         s->append_sensor_data(s, json_root);
                 }
@@ -119,9 +128,13 @@ void daq_thread(void *arg)
                 next_wakeup = s->next_due_time;
         }
 
-        char *json_str = json_dumps(json_root, JSON_COMPACT);
-        json_decref(json_root);
-        push_data(json_str);
+        if (NULL != json_root)
+        {
+            /* valid sensor data available */
+            char *json_str = json_dumps(json_root, JSON_COMPACT);
+            json_decref(json_root);
+            push_data(json_str);
+        }
 
         uint32_t delay_ms = (next_wakeup > now) ? (next_wakeup - now) : 1;
         BaseType_t ret = xQueueReceive(g_daq_msgq, &msg, pdMS_TO_TICKS(delay_ms));
