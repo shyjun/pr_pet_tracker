@@ -56,6 +56,26 @@ static void pending_msgs_enqueue(char *json_str)
     pending_list_unlock();
 }
 
+static void pending_msgs_enqueue_high_priority(char *json_str)
+{
+    pending_list_lock();
+
+    pending_msg_node_t *node = malloc(sizeof(pending_msg_node_t));
+    assert(node != NULL);
+    node->json_str = json_str;
+    node->prev = NULL;
+    node->next = g_pending.head;
+
+    if (g_pending.head)
+        g_pending.head->prev = node;
+    else
+        g_pending.tail = node;
+
+    g_pending.head = node;
+
+    pending_list_unlock();
+}
+
 /* ---- pop from pending list ---- */
 static char *pending_msgs_dequeue(void)
 {
