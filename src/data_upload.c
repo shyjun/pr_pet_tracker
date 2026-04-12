@@ -13,44 +13,72 @@ typedef struct pending_msg_node {
     struct pending_msg_node *next;
 } pending_msg_node_t;
 
-static pending_msg_node_t *g_pending_head = NULL;
-static pending_msg_node_t *g_pending_tail = NULL;
+typedef struct {
+    pending_msg_node_t *head;
+    pending_msg_node_t *tail;
+    QueueHandle_t lock;
+} pending_list_t;
+
+static pending_list_t g_pending = { .head = NULL, .tail = NULL, .lock = NULL };
+
+static void pending_list_lock(void)
+{
+    if (g_pending.lock)
+        xQueueMutexTake(g_pending.lock, portMAX_DELAY);
+}
+
+static void pending_list_unlock(void)
+{
+    if (g_pending.lock)
+        xQueueGiveMutexRecursive(g_pending.lock);
+}
 
 /* ---- add to pending list ---- */
 static void pending_msgs_enqueue(char *json_str)
 {
+    pending_list_lock();
+
     pending_msg_node_t *node = malloc(sizeof(pending_msg_node_t));
     assert(node != NULL);
     node->json_str = json_str;
     node->prev = NULL;
     node->next = NULL;
 
-    if (!g_pending_head)
-        g_pending_head = g_pending_tail = node;
+    if (!g_pending.head)
+        g_pending.head = g_pending.tail = node;
     else
     {
-        g_pending_tail->next = node;
-        node->prev = g_pending_tail;
-        g_pending_tail = node;
+        g_pending.tail->next = node;
+        node->prev = g_pending.tail;
+        g_pending.tail = node;
     }
+
+    pending_list_unlock();
 }
 
 /* ---- pop from pending list ---- */
 static char *pending_msgs_dequeue(void)
 {
-    if (!g_pending_head)
+    pending_list_lock();
+
+    if (!g_pending.head)
+    {
+        pending_list_unlock();
         return NULL;
+    }
 
-    pending_msg_node_t *node = g_pending_head;
-    g_pending_head = node->next;
+    pending_msg_node_t *node = g_pending.head;
+    g_pending.head = node->next;
 
-    if (g_pending_head)
-        g_pending_head->prev = NULL;
+    if (g_pending.head)
+        g_pending.head->prev = NULL;
     else
-        g_pending_tail = NULL;
+        g_pending.tail = NULL;
 
     char *json_str = node->json_str;
     free(node);
+
+    pending_list_unlock();
     return json_str;
 }
 
@@ -158,6 +186,9 @@ void data_upload_thread(void *arg)
 /* ---- init ---- */
 void data_upload_init(void)
 {
+    g_pending.lock = xQueueCreateMutexRecursive(0);
+    assert(g_pending.lock != NULL);
+
     data_upload_thread_msgq = xQueueCreate(10, sizeof(pr_msg_t *));
     assert(data_upload_thread_msgq != NULL);
 
